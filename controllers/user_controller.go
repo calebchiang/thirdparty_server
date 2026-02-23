@@ -124,7 +124,7 @@ func GetCurrentUser(c *gin.Context) {
 	var user models.User
 
 	if err := database.DB.
-		Select("id, name, email, credits").
+		Select("id, name, email, credits, is_premium").
 		Where("id = ?", userID.(uint)).
 		First(&user).Error; err != nil {
 
@@ -135,9 +135,10 @@ func GetCurrentUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"id":      user.ID,
-		"name":    user.Name,
-		"email":   user.Email,
-		"credits": user.Credits,
+		"id":        user.ID,
+		"name":      user.Name,
+		"email":     user.Email,
+		"credits":   user.Credits,
+		"isPremium": user.IsPremium,
 	})
 }
