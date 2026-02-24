@@ -26,8 +26,8 @@ func CreateUser(c *gin.Context) {
 	}
 
 	// Basic validation
-	if input.Name == "" || input.Email == "" || input.Password == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "All fields are required"})
+	if input.Email == "" || input.Password == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email and password required"})
 		return
 	}
 
