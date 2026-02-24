@@ -10,7 +10,7 @@ func ArgumentRoutes(r *gin.Engine) {
 	auth := r.Group("/arguments")
 	auth.Use(middleware.RequireAuth())
 	{
-		auth.GET("/", controllers.GetArguments)
-		auth.POST("/", controllers.CreateArgument)
+		auth.GET("", controllers.GetArguments)
+		auth.POST("", controllers.CreateArgument)
 	}
 }
