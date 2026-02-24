@@ -9,6 +9,7 @@ import (
 func UserRoutes(r *gin.Engine) {
 	r.POST("/users", controllers.CreateUser)
 	r.POST("/login", controllers.LoginUser)
+	r.POST("/apple_login", controllers.AppleLogin)
 
 	auth := r.Group("/users")
 	auth.Use(middleware.RequireAuth())
