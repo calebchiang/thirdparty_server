@@ -15,6 +15,7 @@ func main() {
 	database.DB.AutoMigrate(
 		&models.User{},
 		&models.Argument{},
+		&models.Judgment{},
 	)
 
 	r := gin.Default()

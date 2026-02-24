@@ -40,10 +40,22 @@ func CreateArgument(c *gin.Context) {
 	// Parse form fields
 	personAName := c.PostForm("person_a_name")
 	personBName := c.PostForm("person_b_name")
+	persona := c.PostForm("persona")
 
 	if personAName == "" || personBName == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Person names are required"})
 		return
+	}
+
+	// Validate persona
+	validPersonas := map[string]bool{
+		"mediator": true,
+		"judge":    true,
+		"comedic":  true,
+	}
+
+	if !validPersonas[persona] {
+		persona = "mediator"
 	}
 
 	// Get audio file
@@ -53,19 +65,21 @@ func CreateArgument(c *gin.Context) {
 		return
 	}
 
-	// Generate transcript via service
+	// Generate transcript
 	transcriptionResult, err := services.GenerateTranscript(fileHeader)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate transcript"})
 		return
 	}
 
-	// Create argument record
+	// Save argument WITH persona
 	argument := models.Argument{
 		UserID:        userID.(uint),
 		PersonAName:   personAName,
 		PersonBName:   personBName,
+		Persona:       persona,
 		Transcription: transcriptionResult.Text,
+		Status:        "processing",
 	}
 
 	if err := database.DB.Create(&argument).Error; err != nil {
@@ -78,10 +92,8 @@ func CreateArgument(c *gin.Context) {
 		"user_id":       argument.UserID,
 		"person_a_name": argument.PersonAName,
 		"person_b_name": argument.PersonBName,
+		"persona":       argument.Persona,
 		"transcription": argument.Transcription,
-		"language":      transcriptionResult.Language,
-		"duration":      transcriptionResult.Duration,
-		"segments":      transcriptionResult.Segments,
 		"created_at":    argument.CreatedAt,
 	})
 }
