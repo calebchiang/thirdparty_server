@@ -154,7 +154,7 @@ func ProcessJudgment(argumentID uint) {
 		return
 	}
 
-	fmt.Println("Judgment generated successfully")
+	fmt.Println("Judgment generated successfully.")
 
 	judgment := models.Judgment{
 		ArgumentID:   argument.ID,
