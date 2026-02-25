@@ -2,9 +2,9 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/calebchiang/thirdparty_server/database"
@@ -14,22 +14,24 @@ import (
 
 var personaPrompts = map[string]string{
 	"mediator": `You are a fair mediator settling disputes.
-Give 2-3 sentences about each person's argument - what they got right or wrong.
-Then declare the winner clearly.`,
+Give balanced, thoughtful analysis.`,
 
 	"judge": `You are Judge Judy - direct and no-nonsense.
-Give 2-3 punchy sentences about each person's case. Call out BS when you see it.
-Then declare the winner. One catchphrase allowed.`,
+Be sharp, decisive, and confident.`,
 
 	"comedic": `You are a witty comedic judge.
-Give 2-3 funny sentences roasting each person's argument.
-Then declare the winner with a good punchline.`,
+Be funny but still clearly decide a winner.`,
 }
 
 type JudgmentResult struct {
 	Winner       string // person_a | person_b | tie
 	Reasoning    string
 	FullResponse string
+}
+
+type aiJSONResponse struct {
+	Winner    string `json:"winner"`
+	Reasoning string `json:"reasoning"`
 }
 
 func GenerateJudgment(argument models.Argument) (*JudgmentResult, error) {
@@ -48,13 +50,22 @@ func GenerateJudgment(argument models.Argument) (*JudgmentResult, error) {
 
 	systemMessage := fmt.Sprintf(`%s
 
-Settling: %s vs %s
+You are judging a dispute between two people.
 
-RULES:
-1. 2-3 sentences about %s's argument
-2. 2-3 sentences about %s's argument
-3. End with: VERDICT: [NAME] or VERDICT: TIE
-4. Keep total under 150 words.`,
+IMPORTANT:
+- The FIRST person to speak in the transcript is PERSON A (%s).
+- The SECOND person is PERSON B (%s).
+- PERSON A = %s
+- PERSON B = %s
+
+You MUST respond ONLY in valid JSON using this exact structure:
+
+{
+  "winner": "person_a" | "person_b" | "tie",
+  "reasoning": "2-3 sentence explanation"
+}
+
+Do NOT include any extra text outside the JSON.`,
 		systemPrompt,
 		argument.PersonAName,
 		argument.PersonBName,
@@ -66,7 +77,7 @@ RULES:
 
 %s
 
-Give your verdict with 2-3 sentences per person.`,
+Analyze and return your judgment in JSON format.`,
 		argument.Transcription,
 	)
 
@@ -74,8 +85,8 @@ Give your verdict with 2-3 sentences per person.`,
 		context.Background(),
 		openai.ChatCompletionRequest{
 			Model:       openai.GPT4oMini,
-			Temperature: 0.8,
-			MaxTokens:   250,
+			Temperature: 0.7,
+			MaxTokens:   300,
 			Messages: []openai.ChatCompletionMessage{
 				{Role: openai.ChatMessageRoleSystem, Content: systemMessage},
 				{Role: openai.ChatMessageRoleUser, Content: userMessage},
@@ -89,47 +100,39 @@ Give your verdict with 2-3 sentences per person.`,
 
 	fullResponse := resp.Choices[0].Message.Content
 
-	winner, reasoning := parseVerdict(
-		fullResponse,
-		argument.PersonAName,
-		argument.PersonBName,
-	)
+	// Parse JSON safely
+	result, err := parseJSONResponse(fullResponse)
+	if err != nil {
+		return nil, err
+	}
 
 	return &JudgmentResult{
-		Winner:       winner,
-		Reasoning:    reasoning,
+		Winner:       result.Winner,
+		Reasoning:    result.Reasoning,
 		FullResponse: fullResponse,
 	}, nil
 }
 
-func parseVerdict(response, personAName, personBName string) (string, string) {
+func parseJSONResponse(response string) (*aiJSONResponse, error) {
 
-	re := regexp.MustCompile(`(?i)VERDICT:\s*(.+?)(?:\n|$)`)
-	matches := re.FindStringSubmatch(response)
+	// Sometimes model may wrap JSON in ```json blocks
+	response = strings.TrimSpace(response)
+	response = strings.TrimPrefix(response, "```json")
+	response = strings.TrimPrefix(response, "```")
+	response = strings.TrimSuffix(response, "```")
+	response = strings.TrimSpace(response)
 
-	verdictText := ""
-	if len(matches) > 1 {
-		verdictText = strings.ToLower(strings.TrimSpace(matches[1]))
+	var parsed aiJSONResponse
+	if err := json.Unmarshal([]byte(response), &parsed); err != nil {
+		return nil, fmt.Errorf("failed to parse AI JSON response: %v\nRaw response: %s", err, response)
 	}
 
-	winner := "tie"
-
-	if strings.Contains(verdictText, "tie") || strings.Contains(verdictText, "draw") {
-		winner = "tie"
-	} else if strings.Contains(verdictText, strings.ToLower(personAName)) ||
-		strings.Contains(verdictText, "person a") ||
-		strings.Contains(verdictText, "first person") {
-		winner = "person_a"
-	} else if strings.Contains(verdictText, strings.ToLower(personBName)) ||
-		strings.Contains(verdictText, "person b") ||
-		strings.Contains(verdictText, "second person") {
-		winner = "person_b"
+	// Validate winner
+	if parsed.Winner != "person_a" && parsed.Winner != "person_b" && parsed.Winner != "tie" {
+		return nil, fmt.Errorf("invalid winner value returned: %s", parsed.Winner)
 	}
 
-	reasoning := regexp.MustCompile(`(?i)VERDICT:.+$`).ReplaceAllString(response, "")
-	reasoning = strings.TrimSpace(reasoning)
-
-	return winner, reasoning
+	return &parsed, nil
 }
 
 func ProcessJudgment(argumentID uint) {
