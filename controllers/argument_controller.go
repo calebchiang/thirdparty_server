@@ -72,7 +72,7 @@ func CreateArgument(c *gin.Context) {
 		return
 	}
 
-	// Save argument WITH persona
+	// Create argument
 	argument := models.Argument{
 		UserID:        userID.(uint),
 		PersonAName:   personAName,
@@ -87,13 +87,16 @@ func CreateArgument(c *gin.Context) {
 		return
 	}
 
+	go services.ProcessJudgment(argument.ID)
+
+	// Return immediately
 	c.JSON(http.StatusCreated, gin.H{
 		"id":            argument.ID,
 		"user_id":       argument.UserID,
 		"person_a_name": argument.PersonAName,
 		"person_b_name": argument.PersonBName,
 		"persona":       argument.Persona,
-		"transcription": argument.Transcription,
+		"status":        argument.Status,
 		"created_at":    argument.CreatedAt,
 	})
 }
