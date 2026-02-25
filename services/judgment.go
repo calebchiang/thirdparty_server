@@ -52,12 +52,13 @@ func GenerateJudgment(argument models.Argument) (*JudgmentResult, error) {
 
 You are judging a dispute between two people.
 
-IMPORTANT:
-- The FIRST person to speak in the transcript is PERSON A (%s).
-- The SECOND person is PERSON B (%s).
-- PERSON A = %s
-- PERSON B = %s
+PERSON A = %s
+PERSON B = %s
 
+IMPORTANT RULES:
+- In your reasoning, ALWAYS refer to them using their actual names (%s and %s).
+- NEVER say "Person A" or "Person B".
+- Be clear and direct.
 You MUST respond ONLY in valid JSON using this exact structure:
 
 {
