@@ -100,3 +100,25 @@ func CreateArgument(c *gin.Context) {
 		"created_at":    argument.CreatedAt,
 	})
 }
+
+func GetArgumentByID(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	id := c.Param("id")
+
+	var argument models.Argument
+
+	if err := database.DB.
+		Where("id = ? AND user_id = ?", id, userID.(uint)).
+		First(&argument).Error; err != nil {
+
+		c.JSON(http.StatusNotFound, gin.H{"error": "Argument not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, argument)
+}

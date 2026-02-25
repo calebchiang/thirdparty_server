@@ -11,6 +11,7 @@ func ArgumentRoutes(r *gin.Engine) {
 	auth.Use(middleware.RequireAuth())
 	{
 		auth.GET("", controllers.GetArguments)
+		auth.GET("/:id", controllers.GetArgumentByID)
 		auth.POST("", controllers.CreateArgument)
 	}
 }
