@@ -102,43 +102,6 @@ Give your verdict with 2-3 sentences per person.`,
 	}, nil
 }
 
-func ProcessJudgment(argumentID uint) {
-
-	// 1️⃣ Load argument
-	var argument models.Argument
-	if err := database.DB.First(&argument, argumentID).Error; err != nil {
-		return
-	}
-
-	// Prevent double processing
-	if argument.Status == "complete" {
-		return
-	}
-
-	// 2️⃣ Generate judgment via OpenAI
-	result, err := GenerateJudgment(argument)
-	if err != nil {
-		database.DB.Model(&argument).Update("status", "failed")
-		return
-	}
-
-	// 3️⃣ Save judgment
-	judgment := models.Judgment{
-		ArgumentID:   argument.ID,
-		Winner:       result.Winner,
-		Reasoning:    result.Reasoning,
-		FullResponse: result.FullResponse,
-	}
-
-	if err := database.DB.Create(&judgment).Error; err != nil {
-		database.DB.Model(&argument).Update("status", "failed")
-		return
-	}
-
-	// 4️⃣ Update argument status
-	database.DB.Model(&argument).Update("status", "complete")
-}
-
 func parseVerdict(response, personAName, personBName string) (string, string) {
 
 	re := regexp.MustCompile(`(?i)VERDICT:\s*(.+?)(?:\n|$)`)
@@ -167,4 +130,46 @@ func parseVerdict(response, personAName, personBName string) (string, string) {
 	reasoning = strings.TrimSpace(reasoning)
 
 	return winner, reasoning
+}
+
+func ProcessJudgment(argumentID uint) {
+
+	fmt.Println("Starting judgment for argument:", argumentID)
+
+	var argument models.Argument
+	if err := database.DB.First(&argument, argumentID).Error; err != nil {
+		fmt.Println("Failed to load argument:", err)
+		return
+	}
+
+	if argument.Status == "complete" {
+		fmt.Println("Already completed:", argumentID)
+		return
+	}
+
+	result, err := GenerateJudgment(argument)
+	if err != nil {
+		fmt.Println("GenerateJudgment failed:", err)
+		database.DB.Model(&argument).Update("status", "failed")
+		return
+	}
+
+	fmt.Println("Judgment generated successfully")
+
+	judgment := models.Judgment{
+		ArgumentID:   argument.ID,
+		Winner:       result.Winner,
+		Reasoning:    result.Reasoning,
+		FullResponse: result.FullResponse,
+	}
+
+	if err := database.DB.Create(&judgment).Error; err != nil {
+		fmt.Println("Failed to save judgment:", err)
+		database.DB.Model(&argument).Update("status", "failed")
+		return
+	}
+
+	database.DB.Model(&argument).Update("status", "complete")
+
+	fmt.Println("Judgment saved and argument marked complete:", argumentID)
 }
