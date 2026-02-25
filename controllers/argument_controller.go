@@ -113,6 +113,7 @@ func GetArgumentByID(c *gin.Context) {
 	var argument models.Argument
 
 	if err := database.DB.
+		Preload("Judgment").
 		Where("id = ? AND user_id = ?", id, userID.(uint)).
 		First(&argument).Error; err != nil {
 
