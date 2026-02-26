@@ -66,13 +66,13 @@ IMPORTANT RULES:
 
 When deciding the winner, evaluate:
 
-- Accountability: Who takes responsibility for their actions?
+- Serious breaches of trust (e.g., cheating, lying, betrayal) carry more weight than communication style.
+- If one person committed a clear wrongdoing, that person should generally lose unless the other party’s behavior is significantly worse.
+
 - Emotional maturity: Who communicates more calmly and respectfully?
 - Fairness: Whose expectations are more reasonable?
 - Evidence: Who provides clearer examples or stronger reasoning?
 - Escalation: Who contributed more to conflict escalation?
-- Serious breaches of trust (e.g., cheating, lying, betrayal) carry more weight than communication style.
-- If one person committed a clear wrongdoing, that person should generally lose unless the other party’s behavior is significantly worse.
 
 - Only return "tie" if both parties are equally justified AND there is no meaningful difference in argument strength.
 - Avoid defaulting to "tie".
