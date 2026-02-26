@@ -24,14 +24,25 @@ Be funny but still clearly decide a winner.`,
 }
 
 type JudgmentResult struct {
-	Winner       string // person_a | person_b | tie
-	Reasoning    string
-	FullResponse string
+	Winner                  string
+	Reasoning               string
+	FullResponse            string
+	Respect                 int
+	Empathy                 int
+	Accountability          int
+	EmotionalRegulation     int
+	ManipulationToxicity    int
+	ConversationHealthScore int
 }
 
 type aiJSONResponse struct {
-	Winner    string `json:"winner"`
-	Reasoning string `json:"reasoning"`
+	Winner               string `json:"winner"`
+	Reasoning            string `json:"reasoning"`
+	Respect              int    `json:"respect"`
+	Empathy              int    `json:"empathy"`
+	Accountability       int    `json:"accountability"`
+	EmotionalRegulation  int    `json:"emotional_regulation"`
+	ManipulationToxicity int    `json:"manipulation_toxicity"`
 }
 
 func GenerateJudgment(argument models.Argument) (*JudgmentResult, error) {
@@ -63,16 +74,32 @@ IMPORTANT RULES:
 - In the "winner" field, you MUST return ONLY:
   "person_a", "person_b", or "tie".
 - Never return the actual name in the "winner" field.
+- Strongly prefer selecting a winner.
 
-- You should strongly prefer selecting a winner.
-- Only return "tie" if both parties are equally justified AND there is no meaningful difference in argument strength.
-- Avoid defaulting to "tie".
+CONVERSATION HEALTH SCORING:
+You must also score the conversation using these 5 categories from 1–10:
 
-You MUST respond ONLY in valid JSON using this exact structure:
+- respect
+- empathy
+- accountability
+- emotional_regulation
+- manipulation_toxicity
+
+Scoring rules:
+- 10 = extremely healthy behavior
+- 1 = extremely unhealthy behavior
+- For manipulation_toxicity: 10 = no manipulation/toxicity present, 1 = extreme manipulation/toxicity
+
+Return ONLY valid JSON using this exact structure:
 
 {
   "winner": "person_a" | "person_b" | "tie",
-  "reasoning": "2-3 sentence explanation"
+  "reasoning": "2-3 sentence explanation",
+  "respect": 1-10,
+  "empathy": 1-10,
+  "accountability": 1-10,
+  "emotional_regulation": 1-10,
+  "manipulation_toxicity": 1-10
 }
 
 Do NOT include any extra text outside the JSON.`,
@@ -98,7 +125,7 @@ Analyze and return your judgment in JSON format.`,
 		openai.ChatCompletionRequest{
 			Model:       openai.GPT4oMini,
 			Temperature: 0.3,
-			MaxTokens:   300,
+			MaxTokens:   500,
 			Messages: []openai.ChatCompletionMessage{
 				{Role: openai.ChatMessageRoleSystem, Content: systemMessage},
 				{Role: openai.ChatMessageRoleUser, Content: userMessage},
@@ -112,22 +139,35 @@ Analyze and return your judgment in JSON format.`,
 
 	fullResponse := resp.Choices[0].Message.Content
 
-	// Parse JSON safely
 	result, err := parseJSONResponse(fullResponse)
 	if err != nil {
 		return nil, err
 	}
 
+	// Calculate final conversation health score (0–100)
+	total := result.Respect +
+		result.Empathy +
+		result.Accountability +
+		result.EmotionalRegulation +
+		result.ManipulationToxicity
+
+	conversationHealthScore := total * 2
+
 	return &JudgmentResult{
-		Winner:       result.Winner,
-		Reasoning:    result.Reasoning,
-		FullResponse: fullResponse,
+		Winner:                  result.Winner,
+		Reasoning:               result.Reasoning,
+		FullResponse:            fullResponse,
+		Respect:                 result.Respect,
+		Empathy:                 result.Empathy,
+		Accountability:          result.Accountability,
+		EmotionalRegulation:     result.EmotionalRegulation,
+		ManipulationToxicity:    result.ManipulationToxicity,
+		ConversationHealthScore: conversationHealthScore,
 	}, nil
 }
 
 func parseJSONResponse(response string) (*aiJSONResponse, error) {
 
-	// Sometimes model may wrap JSON in ```json blocks
 	response = strings.TrimSpace(response)
 	response = strings.TrimPrefix(response, "```json")
 	response = strings.TrimPrefix(response, "```")
@@ -139,9 +179,32 @@ func parseJSONResponse(response string) (*aiJSONResponse, error) {
 		return nil, fmt.Errorf("failed to parse AI JSON response: %v\nRaw response: %s", err, response)
 	}
 
-	// Validate winner
 	if parsed.Winner != "person_a" && parsed.Winner != "person_b" && parsed.Winner != "tie" {
 		return nil, fmt.Errorf("invalid winner value returned: %s", parsed.Winner)
+	}
+
+	// Validate score ranges (1–10)
+	validateScore := func(value int, field string) error {
+		if value < 1 || value > 10 {
+			return fmt.Errorf("%s must be between 1 and 10, got %d", field, value)
+		}
+		return nil
+	}
+
+	if err := validateScore(parsed.Respect, "respect"); err != nil {
+		return nil, err
+	}
+	if err := validateScore(parsed.Empathy, "empathy"); err != nil {
+		return nil, err
+	}
+	if err := validateScore(parsed.Accountability, "accountability"); err != nil {
+		return nil, err
+	}
+	if err := validateScore(parsed.EmotionalRegulation, "emotional_regulation"); err != nil {
+		return nil, err
+	}
+	if err := validateScore(parsed.ManipulationToxicity, "manipulation_toxicity"); err != nil {
+		return nil, err
 	}
 
 	return &parsed, nil
@@ -172,10 +235,16 @@ func ProcessJudgment(argumentID uint) {
 	fmt.Println("Judgment generated successfully.")
 
 	judgment := models.Judgment{
-		ArgumentID:   argument.ID,
-		Winner:       result.Winner,
-		Reasoning:    result.Reasoning,
-		FullResponse: result.FullResponse,
+		ArgumentID:              argument.ID,
+		Winner:                  result.Winner,
+		Reasoning:               result.Reasoning,
+		FullResponse:            result.FullResponse,
+		Respect:                 result.Respect,
+		Empathy:                 result.Empathy,
+		Accountability:          result.Accountability,
+		EmotionalRegulation:     result.EmotionalRegulation,
+		ManipulationToxicity:    result.ManipulationToxicity,
+		ConversationHealthScore: result.ConversationHealthScore,
 	}
 
 	if err := database.DB.Create(&judgment).Error; err != nil {
