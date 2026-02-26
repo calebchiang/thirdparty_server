@@ -64,20 +64,23 @@ IMPORTANT RULES:
 - The FIRST person to speak in the transcript is PERSON A (%s).
 - The SECOND person is PERSON B (%s).
 
-When deciding the winner, evaluate:
+When deciding the winner, prioritize in this order:
 
-- Serious breaches of trust (e.g., cheating, lying, betrayal) carry more weight than communication style.
-- If one person committed a clear wrongdoing, that person should generally NOT be the winner unless the other party’s behavior is significantly worse.
-For example, if PERSON A cheated on PERSON B, PERSON A should not be the winner unless
-PERSON B also did something signifcantly worse that breached their trust.
+1. Serious breaches of trust (cheating, dishonesty, betrayal).
+2. Harm caused to the other person.
+3. Escalation and responsibility in the conflict.
+4. Logic and clarity of reasoning.
+5. Emotional maturity.
+6. Accountability for harmful actions.
 
-- Emotional maturity: Who communicates more calmly and respectfully?
-- Fairness: Whose expectations are more reasonable?
-- Evidence: Who provides clearer examples or stronger reasoning?
-- Escalation: Who contributed more to conflict escalation?
+If one person committed a serious breach of trust, that person must lose unless the other party committed a clearly more severe violation.
 
-- Only return "tie" if both parties are equally justified AND there is no meaningful difference in argument strength.
-- Avoid defaulting to "tie".
+Communication skill does NOT override wrongdoing.
+
+Only return "tie" if both parties are truly equal across all factors.
+
+The winner MUST logically match your reasoning.
+If your reasoning criticizes someone for serious wrongdoing, that person cannot be the winner.
 
 You MUST respond ONLY in valid JSON using this exact structure:
 
