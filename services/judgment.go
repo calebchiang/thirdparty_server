@@ -67,7 +67,9 @@ IMPORTANT RULES:
 When deciding the winner, evaluate:
 
 - Serious breaches of trust (e.g., cheating, lying, betrayal) carry more weight than communication style.
-- If one person committed a clear wrongdoing, that person should generally lose unless the other party’s behavior is significantly worse.
+- If one person committed a clear wrongdoing, that person should generally NOT be the winner unless the other party’s behavior is significantly worse.
+For example, if PERSON A cheated on PERSON B, PERSON A should not be the winner unless
+PERSON B also did something signifcantly worse that breached their trust.
 
 - Emotional maturity: Who communicates more calmly and respectfully?
 - Fairness: Whose expectations are more reasonable?
