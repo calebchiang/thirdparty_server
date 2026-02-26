@@ -62,6 +62,12 @@ IMPORTANT RULES:
 - The FIRST person to speak in the transcript is PERSON A (%s).
 - The SECOND person is PERSON B (%s).
 
+- You should strongly prefer selecting a winner.
+- Only return "tie" if both parties are equally justified AND there is no meaningful difference in argument strength.
+- If one party is even slightly more reasonable, articulate, or persuasive, you MUST select them as the winner.
+- Avoid defaulting to "tie".
+- Be decisive.
+
 You MUST respond ONLY in valid JSON using this exact structure:
 
 {
