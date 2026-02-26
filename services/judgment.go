@@ -76,6 +76,13 @@ IMPORTANT RULES:
 - Never return the actual name in the "winner" field.
 - Strongly prefer selecting a winner.
 
+HARMFUL BEHAVIOR OVERRIDE RULE:
+- If one person clearly exhibits harmful behavior (e.g. lying, cheating, intentional deception, manipulation, gaslighting, betrayal, abuse, or deliberate dishonesty), that person MUST automatically lose the argument.
+- This rule overrides communication style, empathy, tone, or politeness.
+- The only exception is if the other person exhibited behavior that is clearly more harmful.
+- If both parties exhibit harmful behavior of roughly equal severity, you may return "tie".
+- Harmful conduct must be prioritized above presentation quality.
+
 CONVERSATION HEALTH SCORING:
 You must also score the conversation using these 5 categories from 1–10:
 
