@@ -97,7 +97,7 @@ Analyze and return your judgment in JSON format.`,
 		context.Background(),
 		openai.ChatCompletionRequest{
 			Model:       openai.GPT4oMini,
-			Temperature: 0.7,
+			Temperature: 0.3,
 			MaxTokens:   300,
 			Messages: []openai.ChatCompletionMessage{
 				{Role: openai.ChatMessageRoleSystem, Content: systemMessage},
