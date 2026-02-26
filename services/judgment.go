@@ -64,11 +64,18 @@ IMPORTANT RULES:
 - The FIRST person to speak in the transcript is PERSON A (%s).
 - The SECOND person is PERSON B (%s).
 
-- You should strongly prefer selecting a winner.
+When deciding the winner, evaluate:
+
+- Accountability: Who takes responsibility for their actions?
+- Emotional maturity: Who communicates more calmly and respectfully?
+- Fairness: Whose expectations are more reasonable?
+- Evidence: Who provides clearer examples or stronger reasoning?
+- Escalation: Who contributed more to conflict escalation?
+- Serious breaches of trust (e.g., cheating, lying, betrayal) carry more weight than communication style.
+- If one person committed a clear wrongdoing, that person should generally lose unless the other party’s behavior is significantly worse.
+
 - Only return "tie" if both parties are equally justified AND there is no meaningful difference in argument strength.
-- If one party is even slightly more reasonable, articulate, or persuasive, you MUST select them as the winner.
 - Avoid defaulting to "tie".
-- Be decisive.
 
 You MUST respond ONLY in valid JSON using this exact structure:
 
