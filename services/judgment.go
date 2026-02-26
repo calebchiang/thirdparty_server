@@ -56,9 +56,11 @@ PERSON A = %s
 PERSON B = %s
 
 IMPORTANT RULES:
-- In your reasoning, ALWAYS refer to them using their actual names (%s and %s).
-- NEVER say "Person A" or "Person B".
-- Be clear and direct.
+- In the "reasoning" field, ALWAYS refer to them using their actual names (%s and %s).
+- NEVER say "Person A" or "Person B" in the reasoning.
+- In the "winner" field, you MUST return ONLY:
+  "person_a", "person_b", or "tie".
+- Never return the actual name in the "winner" field.
 - The FIRST person to speak in the transcript is PERSON A (%s).
 - The SECOND person is PERSON B (%s).
 
@@ -77,6 +79,8 @@ You MUST respond ONLY in valid JSON using this exact structure:
 
 Do NOT include any extra text outside the JSON.`,
 		systemPrompt,
+		argument.PersonAName,
+		argument.PersonBName,
 		argument.PersonAName,
 		argument.PersonBName,
 		argument.PersonAName,
