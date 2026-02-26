@@ -54,6 +54,8 @@ You are judging a dispute between two people.
 
 PERSON A = %s
 PERSON B = %s
+- The FIRST person to speak in the transcript is PERSON A (%s).
+- The SECOND person is PERSON B (%s).
 
 IMPORTANT RULES:
 - In the "reasoning" field, ALWAYS refer to them using their actual names (%s and %s).
@@ -61,8 +63,6 @@ IMPORTANT RULES:
 - In the "winner" field, you MUST return ONLY:
   "person_a", "person_b", or "tie".
 - Never return the actual name in the "winner" field.
-- The FIRST person to speak in the transcript is PERSON A (%s).
-- The SECOND person is PERSON B (%s).
 
 - You should strongly prefer selecting a winner.
 - Only return "tie" if both parties are equally justified AND there is no meaningful difference in argument strength.
