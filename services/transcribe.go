@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 type TranscriptionSegment struct {
@@ -24,8 +25,9 @@ type TranscriptionResult struct {
 	Segments []TranscriptionSegment `json:"segments,omitempty"`
 }
 
-func GenerateTranscript(fileHeader *multipart.FileHeader) (*TranscriptionResult, error) {
-	file, err := fileHeader.Open()
+func GenerateTranscriptFromPath(filePath string) (*TranscriptionResult, error) {
+
+	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +50,7 @@ func GenerateTranscript(fileHeader *multipart.FileHeader) (*TranscriptionResult,
 		return nil, err
 	}
 
-	part, err := writer.CreateFormFile("file", fileHeader.Filename)
+	part, err := writer.CreateFormFile("file", filepath.Base(filePath))
 	if err != nil {
 		return nil, err
 	}

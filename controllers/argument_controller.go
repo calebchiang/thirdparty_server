@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/calebchiang/thirdparty_server/database"
 	"github.com/calebchiang/thirdparty_server/models"
@@ -59,21 +60,41 @@ func CreateArgument(c *gin.Context) {
 		persona = "mediator"
 	}
 
-	// Get audio file
+	// Get uploaded file
 	fileHeader, err := c.FormFile("audio")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Audio file is required"})
 		return
 	}
 
-	// Generate transcript
-	transcriptionResult, err := services.GenerateTranscript(fileHeader)
+	// Enforce file size limit (50MB)
+	const maxFileSize = 50 << 20 // 50MB
+	if fileHeader.Size > maxFileSize {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File too large (max 50MB)"})
+		return
+	}
+
+	// Normalize media (handles video + audio formats)
+	mediaService := services.NewMediaService()
+
+	normalizedPath, err := mediaService.Normalize(fileHeader)
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process media"})
+		return
+	}
+
+	// Generate transcript from normalized file
+	transcriptionResult, err := services.GenerateTranscriptFromPath(normalizedPath)
+	if err != nil {
+		_ = os.Remove(normalizedPath)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate transcript"})
 		return
 	}
 
-	// Create argument
+	// Clean up normalized file after transcription
+	_ = os.Remove(normalizedPath)
+
+	// Create argument record
 	argument := models.Argument{
 		UserID:        userID.(uint),
 		PersonAName:   personAName,
@@ -88,6 +109,7 @@ func CreateArgument(c *gin.Context) {
 		return
 	}
 
+	// Run judgment asynchronously
 	go services.ProcessJudgment(argument.ID)
 
 	// Return immediately
