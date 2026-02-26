@@ -19,6 +19,7 @@ func GetArguments(c *gin.Context) {
 	var arguments []models.Argument
 
 	if err := database.DB.
+		Preload("Judgment").
 		Where("user_id = ?", userID.(uint)).
 		Order("created_at desc").
 		Find(&arguments).Error; err != nil {
