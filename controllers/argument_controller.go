@@ -177,3 +177,117 @@ func DeleteArgument(c *gin.Context) {
 		"message": "Argument deleted successfully",
 	})
 }
+
+func CreateArgumentByScreenshot(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	// Parse form fields
+	personAName := c.PostForm("person_a_name")
+	personBName := c.PostForm("person_b_name")
+	persona := c.PostForm("persona")
+
+	if personAName == "" || personBName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Person names are required"})
+		return
+	}
+
+	// Validate persona
+	validPersonas := map[string]bool{
+		"mediator": true,
+		"judge":    true,
+		"comedic":  true,
+	}
+
+	if !validPersonas[persona] {
+		persona = "mediator"
+	}
+
+	// Parse multiple images (frontend should send: screenshots[])
+	form, err := c.MultipartForm()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Screenshots are required"})
+		return
+	}
+
+	files := form.File["screenshots"]
+	if len(files) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "At least one screenshot is required"})
+		return
+	}
+
+	// Optional: enforce per-file size limit (10MB each)
+	const maxFileSize = 10 << 20
+	for _, file := range files {
+		if file.Size > maxFileSize {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Each screenshot must be under 10MB"})
+			return
+		}
+	}
+
+	// Create argument record FIRST (status = processing)
+	argument := models.Argument{
+		UserID:        userID.(uint),
+		PersonAName:   personAName,
+		PersonBName:   personBName,
+		Persona:       persona,
+		Transcription: "", // not used for screenshots
+		Status:        "processing",
+	}
+
+	if err := database.DB.Create(&argument).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create argument"})
+		return
+	}
+
+	// Call screenshot judgment service (we implement next)
+	result, err := services.GenerateScreenshotJudgment(
+		personAName,
+		personBName,
+		persona,
+		files,
+	)
+
+	if err != nil {
+		database.DB.Model(&argument).Update("status", "failed")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate judgment"})
+		return
+	}
+
+	// Save judgment immediately
+	judgment := models.Judgment{
+		ArgumentID:              argument.ID,
+		Winner:                  result.Winner,
+		Reasoning:               result.Reasoning,
+		FullResponse:            result.FullResponse,
+		Respect:                 result.Respect,
+		Empathy:                 result.Empathy,
+		Accountability:          result.Accountability,
+		EmotionalRegulation:     result.EmotionalRegulation,
+		ManipulationToxicity:    result.ManipulationToxicity,
+		ConversationHealthScore: result.ConversationHealthScore,
+	}
+
+	if err := database.DB.Create(&judgment).Error; err != nil {
+		database.DB.Model(&argument).Update("status", "failed")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save judgment"})
+		return
+	}
+
+	database.DB.Model(&argument).Update("status", "complete")
+
+	// Return full argument with judgment
+	c.JSON(http.StatusCreated, gin.H{
+		"id":            argument.ID,
+		"user_id":       argument.UserID,
+		"person_a_name": argument.PersonAName,
+		"person_b_name": argument.PersonBName,
+		"persona":       argument.Persona,
+		"status":        "complete",
+		"judgment":      judgment,
+		"created_at":    argument.CreatedAt,
+	})
+}

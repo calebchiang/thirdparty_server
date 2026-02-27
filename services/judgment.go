@@ -2,8 +2,11 @@ package services
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"os"
 	"strings"
 
@@ -299,4 +302,182 @@ func ProcessJudgment(argumentID uint) {
 	database.DB.Model(&argument).Update("status", "complete")
 
 	fmt.Println("Judgment saved and argument marked complete:", argumentID)
+}
+
+func GenerateScreenshotJudgment(
+	personAName string,
+	personBName string,
+	persona string,
+	files []*multipart.FileHeader,
+) (*JudgmentResult, error) {
+
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		return nil, fmt.Errorf("OPENAI_API_KEY not set")
+	}
+
+	client := openai.NewClient(apiKey)
+
+	systemPrompt, ok := personaPrompts[persona]
+	if !ok {
+		systemPrompt = personaPrompts["mediator"]
+	}
+
+	systemMessage := fmt.Sprintf(`%s
+
+You are judging a dispute between two people based on TEXT MESSAGE SCREENSHOTS.
+
+PERSON A = %s (LEFT side of screenshots)
+PERSON B = %s (RIGHT side of screenshots)
+
+IMPORTANT:
+- The LEFT side messages belong to %s.
+- The RIGHT side messages belong to %s.
+- Extract the conversation text from the screenshots before judging.
+
+STANDARD RULES:
+- In the "reasoning" field, ALWAYS refer to them using their actual names (%s and %s).
+- In the "winner_name" field, you MUST return ONLY:
+  - "%s"
+  - "%s"
+  - OR "tie"
+- You must spell the name EXACTLY as written above.
+
+IMPORTANT RULE (PAY ATTENTION):
+- If ANY confirmed instance of lying, deception, dishonesty, manipulation, gaslighting, betrayal, or intentional harm appears in the conversation, that person MUST lose.
+- Harmful behavior OVERRIDES tone, politeness, communication style, or emotional delivery.
+- The only exception is if the other person exhibited behavior that is clearly more harmful.
+
+CONVERSATION HEALTH SCORING:
+Score from 1–10 for:
+- respect
+- empathy
+- accountability
+- emotional_regulation
+- manipulation_toxicity
+
+Scoring rules:
+- 10 = extremely healthy behavior
+- 1 = extremely unhealthy behavior
+- For manipulation_toxicity: 10 = no manipulation/toxicity, 1 = extreme manipulation/toxicity
+
+Return ONLY valid JSON:
+
+{
+  "winner_name": "%s" | "%s" | "tie",
+  "reasoning": "2-3 sentence explanation",
+  "respect": 1-10,
+  "empathy": 1-10,
+  "accountability": 1-10,
+  "emotional_regulation": 1-10,
+  "manipulation_toxicity": 1-10
+}
+
+Do NOT include any extra text outside the JSON.`,
+		systemPrompt,
+		personAName,
+		personBName,
+		personAName,
+		personBName,
+		personAName,
+		personBName,
+		personAName,
+		personBName,
+		personAName,
+		personBName,
+	)
+
+	// Convert images to base64 parts
+	var contentParts []openai.ChatMessagePart
+
+	for _, fileHeader := range files {
+
+		file, err := fileHeader.Open()
+		if err != nil {
+			return nil, err
+		}
+
+		bytes, err := io.ReadAll(file)
+		file.Close()
+		if err != nil {
+			return nil, err
+		}
+
+		encoded := base64.StdEncoding.EncodeToString(bytes)
+
+		mimeType := fileHeader.Header.Get("Content-Type")
+		if mimeType == "" {
+			mimeType = "image/png"
+		}
+
+		contentParts = append(contentParts, openai.ChatMessagePart{
+			Type: openai.ChatMessagePartTypeImageURL,
+			ImageURL: &openai.ChatMessageImageURL{
+				URL:    fmt.Sprintf("data:%s;base64,%s", mimeType, encoded),
+				Detail: "high",
+			},
+		})
+	}
+
+	// Add small instruction text at end
+	contentParts = append(contentParts, openai.ChatMessagePart{
+		Type: openai.ChatMessagePartTypeText,
+		Text: "Extract the text conversation and judge it according to the rules above.",
+	})
+
+	resp, err := client.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model:       openai.GPT4o,
+			Temperature: 0.3,
+			MaxTokens:   800,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleSystem,
+					Content: systemMessage,
+				},
+				{
+					Role:         openai.ChatMessageRoleUser,
+					MultiContent: contentParts,
+				},
+			},
+		},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	fullResponse := resp.Choices[0].Message.Content
+
+	// Create temp argument struct for reuse of parser
+	tempArgument := models.Argument{
+		PersonAName: personAName,
+		PersonBName: personBName,
+	}
+
+	result, err := parseJSONResponse(fullResponse, tempArgument)
+	if err != nil {
+		return nil, err
+	}
+
+	total := result.Respect +
+		result.Empathy +
+		result.Accountability +
+		result.EmotionalRegulation +
+		result.ManipulationToxicity
+
+	conversationHealthScore := total * 2
+
+	return &JudgmentResult{
+		Winner:                  result.Winner,
+		Reasoning:               result.Reasoning,
+		FullResponse:            fullResponse,
+		Respect:                 result.Respect,
+		Empathy:                 result.Empathy,
+		Accountability:          result.Accountability,
+		EmotionalRegulation:     result.EmotionalRegulation,
+		ManipulationToxicity:    result.ManipulationToxicity,
+		ConversationHealthScore: conversationHealthScore,
+	}, nil
 }
