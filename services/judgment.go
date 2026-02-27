@@ -68,14 +68,17 @@ PERSON B = %s
 - The FIRST person to speak in the transcript is PERSON A (%s).
 - The SECOND person is PERSON B (%s).
 
-IMPORTANT RULES:
+STANDARD RULES:
 - In the "reasoning" field, ALWAYS refer to them using their actual names (%s and %s).
 - NEVER say "Person A" or "Person B" in the reasoning.
 - In the "winner" field, you MUST return ONLY:
   "person_a", "person_b", or "tie".
 - Never return the actual name in the "winner" field.
 - Strongly prefer selecting a winner.
+
+IMPORTANT RULE (PAY ATTENTION):
 - If one person clearly exhibits harmful behavior (e.g. lying, cheating, intentional deception, manipulation, gaslighting, betrayal, abuse, or deliberate dishonesty), that person MUST automatically lose the argument.
+- Dishonesty, lying, cheating, and any harmful behaviour greatly overrides communication style, empathy, tone, and politeness. 
 - This rule overrides communication style, empathy, tone, or politeness.
 - The only exception is if the other person exhibited behavior that is clearly more harmful.
 - If both parties exhibit harmful behavior of roughly equal severity, you may return "tie".
