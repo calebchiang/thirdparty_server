@@ -79,7 +79,7 @@ STANDARD RULES:
 IMPORTANT RULE (PAY ATTENTION):
 - If one person clearly exhibits harmful behavior (e.g. lying, cheating, intentional deception, manipulation, gaslighting, betrayal, abuse, or deliberate dishonesty), that person MUST automatically lose the argument.
 - Dishonesty, lying, cheating, and any harmful behaviour greatly overrides communication style, empathy, tone, and politeness. 
-- This rule overrides communication style, empathy, tone, or politeness.
+- If person_A is named Chris, and person_B is named Hans, if Hans lied to Chris, then Chris is the winner. You will put "person_a" in the winner.
 - The only exception is if the other person exhibited behavior that is clearly more harmful.
 - If both parties exhibit harmful behavior of roughly equal severity, you may return "tie".
 
