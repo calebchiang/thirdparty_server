@@ -258,6 +258,8 @@ func ProcessJudgment(argumentID uint) {
 		return
 	}
 
+	fmt.Println("Persona from DB:", argument.Persona)
+
 	if argument.Status == "complete" {
 		fmt.Println("Already completed:", argumentID)
 		return
