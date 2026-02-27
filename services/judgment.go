@@ -65,7 +65,7 @@ You are judging a dispute between two people.
 
 PERSON A = %s
 PERSON B = %s
-- The FIRST person to speak in the transcript is PERSON A (%s).
+- The FIRST person to speak in the transcript is ALWAYS PERSON A (%s).
 - The SECOND person is PERSON B (%s).
 
 STANDARD RULES:
