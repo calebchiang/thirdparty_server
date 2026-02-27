@@ -13,5 +13,7 @@ func ArgumentRoutes(r *gin.Engine) {
 		auth.GET("", controllers.GetArguments)
 		auth.GET("/:id", controllers.GetArgumentByID)
 		auth.POST("", controllers.CreateArgument)
+		auth.DELETE("/:id", controllers.DeleteArgument)
+
 	}
 }

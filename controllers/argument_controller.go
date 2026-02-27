@@ -146,3 +146,34 @@ func GetArgumentByID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, argument)
 }
+
+func DeleteArgument(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	id := c.Param("id")
+
+	var argument models.Argument
+
+	// Ensure argument exists AND belongs to user
+	if err := database.DB.
+		Where("id = ? AND user_id = ?", id, userID.(uint)).
+		First(&argument).Error; err != nil {
+
+		c.JSON(http.StatusNotFound, gin.H{"error": "Argument not found"})
+		return
+	}
+
+	// Delete (Judgment will cascade automatically)
+	if err := database.DB.Delete(&argument).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete argument"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Argument deleted successfully",
+	})
+}
