@@ -36,7 +36,7 @@ type JudgmentResult struct {
 }
 
 type aiJSONResponse struct {
-	Winner               string `json:"winner"`
+	WinnerName           string `json:"winner_name"`
 	Reasoning            string `json:"reasoning"`
 	Respect              int    `json:"respect"`
 	Empathy              int    `json:"empathy"`
@@ -65,26 +65,26 @@ You are judging a dispute between two people.
 
 PERSON A = %s
 PERSON B = %s
+
 - The FIRST person to speak in the transcript is ALWAYS PERSON A (%s).
 - The SECOND person is PERSON B (%s).
 
 STANDARD RULES:
 - In the "reasoning" field, ALWAYS refer to them using their actual names (%s and %s).
-- NEVER say "Person A" or "Person B" in the reasoning.
-- In the "winner" field, you MUST return ONLY:
-  "person_a", "person_b", or "tie".
-- Never return the actual name in the "winner" field.
-- Strongly prefer selecting a winner.
+- In the "winner_name" field, you MUST return ONLY:
+  - "%s"
+  - "%s"
+  - OR "tie"
+- You must spell the name EXACTLY as written above.
 
 IMPORTANT RULE (PAY ATTENTION):
-- If one person clearly exhibits harmful behavior (e.g. lying, cheating, intentional deception, manipulation, gaslighting, betrayal, abuse, or deliberate dishonesty), that person MUST automatically lose the argument.
-- Dishonesty, lying, cheating, and any harmful behaviour greatly overrides communication style, empathy, tone, and politeness. 
-- If person_A is named Chris, and person_B is named Hans, if Hans lied to Chris, then Chris is the winner. You will put "person_a" in the winner.
+- If ANY confirmed instance of lying, deception, dishonesty, manipulation, gaslighting, betrayal, or intentional harm appears in the transcript, that person MUST lose.
+- Harmful behavior OVERRIDES tone, politeness, communication style, or emotional delivery.
+- Example: If %s lied to %s, then %s is the winner.
 - The only exception is if the other person exhibited behavior that is clearly more harmful.
-- If both parties exhibit harmful behavior of roughly equal severity, you may return "tie".
 
 CONVERSATION HEALTH SCORING:
-You must also score the conversation using these 5 categories from 1–10:
+You must score the conversation using these 5 categories from 1–10:
 
 - respect
 - empathy
@@ -100,7 +100,7 @@ Scoring rules:
 Return ONLY valid JSON using this exact structure:
 
 {
-  "winner": "person_a" | "person_b" | "tie",
+  "winner_name": "%s" | "%s" | "tie",
   "reasoning": "2-3 sentence explanation",
   "respect": 1-10,
   "empathy": 1-10,
@@ -110,12 +110,25 @@ Return ONLY valid JSON using this exact structure:
 }
 
 Do NOT include any extra text outside the JSON.`,
-		systemPrompt,
-		argument.PersonAName,
-		argument.PersonBName,
-		argument.PersonAName,
-		argument.PersonBName,
-		argument.PersonAName,
+		systemPrompt, // 1
+
+		argument.PersonAName, // 2
+		argument.PersonBName, // 3
+
+		argument.PersonAName, // 4
+		argument.PersonBName, // 5
+
+		argument.PersonAName, // 6
+		argument.PersonBName, // 7
+
+		argument.PersonAName, // 8
+		argument.PersonBName, // 9
+
+		argument.PersonBName, // 10 (liar in example)
+		argument.PersonAName, // 11 (lied to)
+		argument.PersonAName, // 12 (winner in example)
+
+		argument.PersonAName, // 13 (JSON option A)
 		argument.PersonBName,
 	)
 
@@ -146,7 +159,7 @@ Analyze and return your judgment in JSON format.`,
 
 	fullResponse := resp.Choices[0].Message.Content
 
-	result, err := parseJSONResponse(fullResponse)
+	result, err := parseJSONResponse(fullResponse, argument)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +186,7 @@ Analyze and return your judgment in JSON format.`,
 	}, nil
 }
 
-func parseJSONResponse(response string) (*aiJSONResponse, error) {
+func parseJSONResponse(response string, argument models.Argument) (*JudgmentResult, error) {
 
 	response = strings.TrimSpace(response)
 	response = strings.TrimPrefix(response, "```json")
@@ -186,8 +199,17 @@ func parseJSONResponse(response string) (*aiJSONResponse, error) {
 		return nil, fmt.Errorf("failed to parse AI JSON response: %v\nRaw response: %s", err, response)
 	}
 
-	if parsed.Winner != "person_a" && parsed.Winner != "person_b" && parsed.Winner != "tie" {
-		return nil, fmt.Errorf("invalid winner value returned: %s", parsed.Winner)
+	var mappedWinner string
+
+	switch strings.TrimSpace(strings.ToLower(parsed.WinnerName)) {
+	case strings.ToLower(argument.PersonAName):
+		mappedWinner = "person_a"
+	case strings.ToLower(argument.PersonBName):
+		mappedWinner = "person_b"
+	case "tie":
+		mappedWinner = "tie"
+	default:
+		return nil, fmt.Errorf("invalid winner_name returned: %s", parsed.WinnerName)
 	}
 
 	// Validate score ranges (1–10)
@@ -214,7 +236,16 @@ func parseJSONResponse(response string) (*aiJSONResponse, error) {
 		return nil, err
 	}
 
-	return &parsed, nil
+	return &JudgmentResult{
+		Winner:               mappedWinner,
+		Reasoning:            parsed.Reasoning,
+		FullResponse:         response,
+		Respect:              parsed.Respect,
+		Empathy:              parsed.Empathy,
+		Accountability:       parsed.Accountability,
+		EmotionalRegulation:  parsed.EmotionalRegulation,
+		ManipulationToxicity: parsed.ManipulationToxicity,
+	}, nil
 }
 
 func ProcessJudgment(argumentID uint) {
