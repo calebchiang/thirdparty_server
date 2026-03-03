@@ -21,6 +21,7 @@ func main() {
 	r := gin.Default()
 	routes.UserRoutes(r)
 	routes.ArgumentRoutes(r)
+	routes.RevenueCatRoutes(r)
 
 	r.Run()
 }
