@@ -19,8 +19,7 @@ func RevenueCatWebhook(c *gin.Context) {
 	}
 
 	// Log the raw payload
-	fmt.Println("====================================")
-	fmt.Println("🔥 REVENUECAT WEBHOOK RECEIVED")
+	fmt.Println("REVENUECAT WEBHOOK RECEIVED")
 	fmt.Println(string(body))
 	fmt.Println("====================================")
 
