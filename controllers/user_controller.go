@@ -142,3 +142,35 @@ func GetCurrentUser(c *gin.Context) {
 		"isPremium": user.IsPremium,
 	})
 }
+
+func DeleteCurrentUser(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Unauthorized",
+		})
+		return
+	}
+
+	var user models.User
+
+	// Make sure user exists
+	if err := database.DB.First(&user, userID.(uint)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "User not found",
+		})
+		return
+	}
+
+	// Delete user
+	if err := database.DB.Delete(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to delete user",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "User deleted successfully",
+	})
+}
