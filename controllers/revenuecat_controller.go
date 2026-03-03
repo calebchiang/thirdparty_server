@@ -21,7 +21,6 @@ func RevenueCatWebhook(c *gin.Context) {
 	// Log the raw payload
 	fmt.Println("REVENUECAT WEBHOOK RECEIVED")
 	fmt.Println(string(body))
-	fmt.Println("====================================")
 
 	// Respond OK so RevenueCat knows webhook succeeded
 	c.JSON(http.StatusOK, gin.H{
