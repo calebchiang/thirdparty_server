@@ -39,6 +39,30 @@ func CreateArgument(c *gin.Context) {
 		return
 	}
 
+	// Fetch user
+	var user models.User
+	if err := database.DB.First(&user, userID.(uint)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Check credits
+	if user.Credits <= 0 {
+		c.JSON(http.StatusPaymentRequired, gin.H{
+			"error": "No credits remaining",
+		})
+		return
+	}
+
+	// Deduct credit
+	if err := database.DB.Model(&user).
+		Update("credits", user.Credits-1).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to deduct credit",
+		})
+		return
+	}
+
 	// Parse form fields
 	personAName := c.PostForm("person_a_name")
 	personBName := c.PostForm("person_b_name")
@@ -182,6 +206,30 @@ func CreateArgumentByScreenshot(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	// Fetch user
+	var user models.User
+	if err := database.DB.First(&user, userID.(uint)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Check credits
+	if user.Credits <= 0 {
+		c.JSON(http.StatusPaymentRequired, gin.H{
+			"error": "No credits remaining",
+		})
+		return
+	}
+
+	// Deduct credit
+	if err := database.DB.Model(&user).
+		Update("credits", user.Credits-1).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to deduct credit",
+		})
 		return
 	}
 
