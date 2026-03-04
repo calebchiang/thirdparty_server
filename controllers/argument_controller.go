@@ -48,7 +48,7 @@ func CreateArgument(c *gin.Context) {
 
 	// Check credits
 	if user.Credits <= 0 {
-		c.JSON(http.StatusPaymentRequired, gin.H{
+		c.JSON(http.StatusForbidden, gin.H{
 			"error": "No credits remaining",
 		})
 		return
@@ -218,7 +218,7 @@ func CreateArgumentByScreenshot(c *gin.Context) {
 
 	// Check credits
 	if user.Credits <= 0 {
-		c.JSON(http.StatusPaymentRequired, gin.H{
+		c.JSON(http.StatusForbidden, gin.H{
 			"error": "No credits remaining",
 		})
 		return
