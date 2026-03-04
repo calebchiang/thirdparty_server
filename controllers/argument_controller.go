@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"io"
 	"net/http"
 	"os"
 
@@ -48,6 +49,8 @@ func CreateArgument(c *gin.Context) {
 
 	// Check credits
 	if user.Credits <= 0 {
+		io.Copy(io.Discard, c.Request.Body)
+
 		c.JSON(http.StatusForbidden, gin.H{
 			"error": "No credits remaining",
 		})
@@ -218,6 +221,8 @@ func CreateArgumentByScreenshot(c *gin.Context) {
 
 	// Check credits
 	if user.Credits <= 0 {
+		io.Copy(io.Discard, c.Request.Body)
+
 		c.JSON(http.StatusForbidden, gin.H{
 			"error": "No credits remaining",
 		})
